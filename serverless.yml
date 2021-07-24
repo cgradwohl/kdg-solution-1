@@ -1,10 +1,11 @@
-service: serverless-typescript
+service: kdg-solution-1
 
 frameworkVersion: 2
 provider:
   name: aws
   runtime: nodejs14.x
   lambdaHashingVersion: 20201221
+  region: us-east-1
 
 package:
   individually: true
@@ -12,17 +13,30 @@ package:
 plugins:
   - serverless-webpack
 
-functions:
-  worker:
-    handler: src/worker.default
-    events:
-      - http:
-          path: /
-          method: get
-
 custom:
   webpack:
     webpackConfig: webpack.config.js
     includeModules: true
     packager: npm
     excludeFiles: src/**/*.test.js
+
+functions:
+  IngestionWorker:
+    handler: src/ingestion-worker.default
+    events:
+      stream:
+      type: kinesis
+      arn:
+        Fn::GetAtt:
+          - IngestionStream
+          - Arn
+      batchSize: 100
+      parallelizationFactor: 1 
+
+resources:
+  Resources:
+    IngestionStream:
+      Type: AWS::Kinesis::Stream
+      Properties:
+        Name: kdg-solution-1-stream
+        ShardCount: 1
