@@ -24,14 +24,14 @@ functions:
   IngestionWorker:
     handler: src/ingestion-worker.default
     events:
-      stream:
-      type: kinesis
-      arn:
-        Fn::GetAtt:
-          - IngestionStream
-          - Arn
-      batchSize: 100
-      parallelizationFactor: 1 
+      - stream:
+        type: kinesis
+        arn:
+          Fn::GetAtt:
+            - IngestionStream
+            - Arn
+        batchSize: 100
+        parallelizationFactor: 1
 
 resources:
   Resources:
