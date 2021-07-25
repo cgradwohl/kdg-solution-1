@@ -1,6 +1,6 @@
 service: kdg-solution-1
 
-frameworkVersion: 2
+frameworkVersion: '2'
 provider:
   name: aws
   runtime: nodejs14.x
@@ -12,6 +12,7 @@ package:
 
 plugins:
   - serverless-webpack
+  - serverless-iam-roles-per-function
 
 custom:
   webpack:
@@ -22,16 +23,39 @@ custom:
 
 functions:
   IngestionWorker:
-    handler: src/ingestion-worker.default
+    environment:
+      JOB_QUEUE:
+        Fn::GetAtt:
+          - JobQueue
+          - QueueName
     events:
       - stream:
-        type: kinesis
-        arn:
+          type: kinesis
+          arn:
+            Fn::GetAtt:
+              - IngestionStream
+              - Arn
+          batchSize: 100
+          parallelizationFactor: 1
+    handler: src/ingestion-worker.default
+    iamRoleStatements:
+      - Effect: Allow     
+        Action:
+          - sqs:*        
+        Resource:
           Fn::GetAtt:
-            - IngestionStream
-            - Arn
-        batchSize: 100
-        parallelizationFactor: 1
+              - JobQueue
+              - Arn
+  
+  JobWorker:
+    handler: src/job-worker.default
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - JobQueue
+              - Arn
+          batchSize: 1
 
 resources:
   Resources:
@@ -40,3 +64,17 @@ resources:
       Properties:
         Name: kdg-solution-1-stream
         ShardCount: 1
+    
+    JobQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        VisibilityTimeout: 60
+        RedrivePolicy:
+          deadLetterTargetArn:
+            Fn::GetAtt:
+              - JobQueueDLQ
+              - Arn
+          maxReceiveCount: 10
+
+    JobQueueDLQ:
+      Type: AWS::SQS::Queue
