@@ -3,9 +3,7 @@ import { getRandomIntFromRange } from "./lib/getRandomIntFromRange";
 import { work } from "./lib/work";
 
 const processEvent = async (record: SQSRecord) => {
-  console.log("::: SQS RECORD :::", record);
-
-  // switch on each action type
+  console.log("::: SQS RECORD BODY :::", record.body);
 
   const workInterval = getRandomIntFromRange(100, 2000);
 

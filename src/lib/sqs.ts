@@ -9,6 +9,7 @@ export function enqueue<T>(queueName: string) {
         QueueName: queueName,
       })
       .promise();
+    console.log("queueUrl:::", queueUrl);
     return sqs
       .sendMessage({
         MessageBody: JSON.stringify(message),
